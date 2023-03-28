@@ -1,0 +1,17 @@
+remove_persistent_data: yes
+
+vault_repository: "https://helm.releases.hashicorp.com"
+vault_namespace : "vault"
+vault_version   : ""
+vault_nodeport  : 38200
+
+host_port: 8200
+container_name: vault
+container_image: docker.io/vault
+container_version: latest
+container_port: 8200:8200
+
+persistent_data_path: /opt/vault:/data
+
+admin_username: admin
+admin_password: "Password1"

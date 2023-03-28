@@ -1,0 +1,57 @@
+---
+  # Create namespace
+- name: nexus - Create namespace
+  shell: 
+    cmd: kubectl create namespace {{ nexus_namespace }}
+
+- name: nexus - Verify if nexus via Helm is deployed
+  shell:
+    cmd: helm list -A -o json |jq '.[]|select(.name=="nexus")'| jq -r .status
+  register: helm_check
+
+  # Add sonaytype nexus repository
+- name: nexus - Add Helm nexus repository  
+  shell: 
+    cmd: |
+      helm repo add sonatype {{ nexus_repository }}
+      helm repo update
+  when: helm_check.stdout != "deployed"
+
+  # Deploy nexus chart
+- name: nexus - Install nexus chart
+  shell:
+    cmd: helm install nexus-repo sonatype/nexus-repository-manager --namespace {{ nexus_namespace }} --create-namespace 
+    # --set service.type=NodePort --set service.nodePort={{ nexus_nodeport }}
+  when: helm_check.stdout != "deployed"
+
+  # Set nodeport
+- name: nexus - Set nodeport
+  shell: 
+    cmd: kubectl patch svc nexus-repo-nexus-repository-manager --namespace {{ nexus_namespace }} --type='json' -p '[{"op":"replace","path":"/spec/type","value":"NodePort"},{"op":"replace","path":"/spec/ports/0/nodePort","value":{{ nexus_nodeport }}}]'
+  
+  # Wait
+- name: nexus - Wait for installation
+  shell:
+    cmd: kubectl get pods -n {{ nexus_namespace }} -o json | jq -r '.items[] | select(.metadata.name | startswith("nexus-repo"))' | jq -r ".status.phase"
+  register: kubectl_get_pods
+  until: kubectl_get_pods.stdout == "Running"
+  retries: 100
+  delay: 10
+
+  # Get pod name
+- name: nexus - Get pod name
+  shell: 
+    cmd: kubectl get pod -n {{ nexus_namespace }} -o custom-columns=":metadata.name"
+  register: nexus_name
+
+  # Get admin password
+- name: nexus - Get admin password
+  shell: 
+    cmd: kubectl exec -n {{ nexus_namespace }} {{ nexus_name.stdout }} -- cat /nexus-data/admin.password
+  register: nexus_admin_password
+
+- name: nexus - Output admin password
+  debug:
+    msg: "Nexus admin password: {{ nexus_admin_password.stdout }}"
+
+

@@ -1,0 +1,17 @@
+---
+remove_persistent_data: yes
+
+nexus_repository : "https://sonatype.github.io/helm3-charts/"
+nexus_namespace  : "nexus-repo"
+nexus_version    :
+nexus_nodeport   : 30081
+nexus_data_path  : "/var/nexus/nexus-data"
+nexus_nfs_path   : "/nexus-data"
+nexus_nfs_server : 10.42.1.200
+
+nexus_ldap_name:
+nexus_ldap_protocol:
+nexus_ldap_hostname:
+nexus_ldap_port:
+nexus_ldap_searchbaseDN:
+nexus_ldap_authentication_method:

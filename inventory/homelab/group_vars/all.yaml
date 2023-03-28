@@ -1,0 +1,80 @@
+---
+# url to k3s repository to download binaries
+k3s_repository_url: "https://github.com/k3s-io/k3s/releases/download"
+# k3s version to download/use
+k3s_version       : v1.26.1+k3s1
+# IPv4/IPv6 network CIDRs to use for pod IPs, default is 10.42.0.0/16
+k3s_cluster_cidr  : "10.90.0.0/16"
+# IPv4/IPv6 network CIDRs to use for service IPs, default is 10.43.0.0/16
+k3s_service_cidr  : "10.91.0.0/16"
+# k3s_token is required  masters can talk together securely. can be alphanumeric only.
+k3s_token         : "mV320rGtU5ZiLIsXcC28tQp8"
+# interface which will be used for flannel
+k3s_flannel_iface: "eth0"
+# The IP on which the node is reachable in the cluster.
+k3s_node_ip: '{{ ansible_facts[k3s_flannel_iface]["ipv4"]["address"] }}'
+# Disable the taint manually by setting: k3s_master_taint = false
+k3s_master_taint: "{{ true if groups['node'] | default([]) | length >= 1 else false }}"
+# common arguments for k3s server and k3s agents
+k3s_extra_args: >-
+  --flannel-iface={{ k3s_flannel_iface }}
+  --node-ip={{ k3s_node_ip }}
+# k3s server install arguments, required are: --disable servicelb, --tls-san {{ k3s_apiserver_endpoint }}
+k3s_extra_server_args: >-
+  {{ k3s_extra_args }}
+  {{ '--node-taint node-role.kubernetes.io/master=true:NoSchedule' if k3s_master_taint else '' }}
+  --tls-san {{ k3s_apiserver_endpoint }}
+  --disable servicelb
+  --disable traefik
+  --cluster-cidr={{ k3s_cluster_cidr }}
+  --service-cidr={{ k3s_service_cidr }}
+# k3s agent install arguments
+k3s_extra_agent_args: >-
+  {{ k3s_extra_args }}
+# apiserver_endpoint is virtual ip-address which will be configured on each master
+k3s_apiserver_endpoint: "192.168.32.222"
+# timezone
+k3s_timezone: "Europe/Amsterdam"
+
+
+
+metallb_repository_url    : "https://raw.githubusercontent.com/metallb/metallb"
+metallb_version           : "v0.13.7"
+metallb_type              : "native"  # metallb type frr or native
+metallb_mode              : "layer2"  # metallb mode layer2 or bgp
+metallb_speaker_version   : "v0.13.7"
+metallb_controller_version: "v0.13.7"
+metallb_ip_range          : "192.168.32.160-192.168.32.170"
+# metallb_bgp_my_asn: "64513"
+# metallb_bgp_peer_asn: "64512"
+# metallb_bgp_peer_address: "192.168.32.1"
+# metallb_frr_tag_version: "v7.5.1" # image tag for metal lb
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ansible_user: root
+systemd_dir: /etc/systemd/system
+master_ip: "{{ hostvars[groups['master'][0]]['ansible_host'] | default(groups['master'][0]) }}"
+
+# image tag for kube-vip
+#kube_vip_tag_version: "v0.5.10"
+

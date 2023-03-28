@@ -1,0 +1,7 @@
+---
+dashboard_repository_url: "https://kubernetes.github.io/dashboard/"
+dashboard_version   : ""
+dashboard_namespace : "kubernetes-dashboard"
+dashboard_nodeport  : 30000
+dashboard_username  : "admin"
+

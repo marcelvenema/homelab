@@ -1,0 +1,63 @@
+---
+- name: k3s dashboard - Verify if kubernetes dashboard via Helm is deployed
+  shell:
+    cmd: helm list -A -o json | jq '.[]|select(.name=="kubernetes-dashboard")'| jq -r .status
+  register: helm_check
+
+  # Add helm repository
+- name: k3s dashboard - Add Helm repository
+  shell: 
+    cmd: |
+      helm repo add kubernetes-dashboard {{dashboard_repository_url}}
+      helm repo update
+  when: helm_check.stdout != "deployed"
+
+  # Deploy kubernetes-dashboard chart
+- name: k3s dashboard - Deploy k3s dashboard helm chart
+  shell: 
+    cmd: helm install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --namespace {{ dashboard_namespace }} --create-namespace --set service.type=NodePort --set service.nodePort={{ dashboard_nodeport }} --set serviceAccount.name={{ dashboard_username }}
+  when: helm_check.stdout != "deployed"
+
+
+
+- name: k3s dashboard - Output Kubernetes Dashboard URL
+  debug:
+    msg: "Kubernetes Dashboard URL: https://{{ ansible_host }}:{{ dashboard_nodeport }}"
+
+  # Prepare rbac roles
+- name: k3s dashboard - Prepare RBAC roles
+  copy:
+    dest: "/tmp/dashboard_rbac.yaml"
+    content: |
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: {{ dashboard_username }}
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: cluster-admin
+      subjects:
+        - kind: ServiceAccount
+          name: {{ dashboard_username }}
+          namespace: {{ dashboard_namespace }}
+
+  # Create rbac roles
+- name: k3s dashboard - Create RBAC roles
+  shell: 
+    cmd: kubectl apply -f /tmp/dashboard_rbac.yaml
+  register: success
+  retries: 100
+  delay: 10
+  until: success.rc == 0
+
+ # Get token
+- name: k3s dashbaord - Get bearer token
+  shell: 
+    cmd: kubectl create token {{ dashboard_username }} -n {{ dashboard_namespace }}
+  register: dashboard_token
+
+- name: k3s dashboard - Output token
+  debug:
+    msg: "Kubernetes Dashboard token: {{ dashboard_token.stdout }}"

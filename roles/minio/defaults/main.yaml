@@ -1,0 +1,10 @@
+---
+minio_repository_url  : "https://charts.bitnami.com/bitnami"
+minio_namespace       : "minio"
+minio_version         : "v4.5.8"
+minio_nodeport        : 39000
+
+minio_accesskey       : "admin"
+minio_secretkey       : "Password29!"
+minio_persistent      : true
+minio_persistent_size : 10Gi

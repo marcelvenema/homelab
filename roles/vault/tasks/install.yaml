@@ -1,0 +1,13 @@
+---
+- name: vault - Verify if Vault via Helm is deployed
+  shell: /usr/local/bin/helm list -A -o json |jq '.[]|select(.name=="vault")'| jq -r .status
+  register: helm_check
+
+    # Add kubernetes-dashboard repository
+- name: vault - Add Helm vault repository  
+  shell: 
+    cmd: |
+      helm repo add vault {{ vault_repository }}
+      helm repo update
+  when: helm_check.stdout != "deployed"
+

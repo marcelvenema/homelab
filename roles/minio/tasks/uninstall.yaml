@@ -1,0 +1,11 @@
+---
+  # Uninstall k3s dashboard
+- name: Uninstall - Verify if minio via Helm is deployed
+  shell: 
+    cmd: helm list -A -o json | jq '.[]|select(.name=="minio")'| jq -r .status
+  register: helm_check
+
+- name: Uninstall - Uninstall minio
+  shell: 
+    cmd: helm uninstall minio --namespace {{ minio_namespace }}
+  when: helm_check.stdout == 'deployed'

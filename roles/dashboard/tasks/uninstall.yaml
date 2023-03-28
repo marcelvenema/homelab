@@ -1,0 +1,11 @@
+---
+  # Uninstall k3s dashboard
+- name: Uninstall - Verify if k3s dashboard via Helm is deployed
+  shell: 
+    cmd: helm list -A -o json | jq '.[]|select(.name=="kubernetes-dashboard")'| jq -r .status
+  register: dashboard_check
+
+- name: Uninstall - Uninstall k3s dashboard
+  shell: 
+    cmd: helm uninstall kubernetes-dashboard --namespace {{ dashboard_namespace }}
+  when: dashboard_check.stdout == 'deployed'

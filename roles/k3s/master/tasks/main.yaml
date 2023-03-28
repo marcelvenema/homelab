@@ -1,0 +1,24 @@
+---
+- name: Clean previous runs of k3s-init
+  systemd:
+    name: k3s-init
+    state: stopped
+  failed_when: false
+
+- name: Clean previous runs of k3s-init
+  command: systemctl reset-failed k3s-init
+  failed_when: false
+  changed_when: false
+  args:
+    warn: false  # The ansible systemd module does not support reset-failed
+
+- name: Deploy kube-vip manifest
+  include_tasks: kubevip.yaml
+
+- name: Deploy metallb manifest
+  include_tasks: metallb.yaml
+
+- name: Deploy k3s manifest
+  include_tasks: k3s.yaml
+
+

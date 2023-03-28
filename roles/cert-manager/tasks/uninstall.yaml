@@ -1,0 +1,7 @@
+---
+- name: cert-manager - Uninstall
+  shell:
+    command: |
+      helm delete cert-manager -namespace {{ certmanager_namespace }}
+      kubectl delete namespace {{ certmanager_namespace }}
+      kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/{{ certmanager_version }}/cert-manager.crds.yaml

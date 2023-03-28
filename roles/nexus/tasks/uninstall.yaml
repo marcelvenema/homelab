@@ -1,0 +1,3 @@
+- name: Uninstall - Uninstall Sonatype Nexus Repository oss
+  shell: 
+    cmd: helm uninstall nexus-repo --namespace {{ nexus_namespace }}

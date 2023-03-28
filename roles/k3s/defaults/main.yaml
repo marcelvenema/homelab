@@ -1,0 +1,39 @@
+---
+
+
+
+
+
+
+
+k3s_udp_ports:
+  # flannex vxlan
+  - 8472
+  # flannel wireguard
+  - 51820-51821
+k3s_tcp_ports:
+  # k3s supervisor and kubernetes api server
+  - 6443
+  - 2379-2380
+  # kubelet metrics
+  - 10250
+
+
+
+# Flannel CNI firewall ports
+flannel_udp_ports:
+  - 8285
+  - 8472
+
+metallb_udp_ports:
+  - 4789
+  - 7472
+metallb_tcp_ports:
+  - 7472
+  - 7946
+  - 9443
+  - 30000-32767
+
+
+  
+

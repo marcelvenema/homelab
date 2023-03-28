@@ -1,0 +1,6 @@
+---
+  # Install and setup Helm
+  # See https://helm.sh/docs/intro/install/
+- name: Helm - Extract Helm archive file
+  shell: 
+    cmd: curl {{helm_repository_url}} | sh

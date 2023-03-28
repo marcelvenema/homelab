@@ -1,0 +1,66 @@
+---
+#################################
+## Install Vault               ##
+#################################
+- name: Load vault image
+  shell: 
+    cmd: ./k3s ctr image import /aco_pkg/Hashicorp/Vault/hashicorp_vault*.tar
+    chdir: /usr/local/bin/
+
+- name: Verify - if Vault Helm is deployed
+  shell: /usr/local/bin/helm list -A -o json |jq '.[]|select(.name=="vault")'| jq -r .status
+  register: helm_check
+
+- name: Install Helm chart
+  shell: /usr/local/bin/helm install vault /aco_pkg/Hashicorp/Vault/vault-0.22.0.tgz
+  when: helm_check.stdout != "deployed"
+
+- name: Wait for vault pod
+  shell: /usr/local/bin/kubectl get pods vault-0 -o json |jq -r ".status.phase"
+  register: kubectl_get_pods
+  until: kubectl_get_pods.stdout == "Running"
+  retries: 100
+  delay: 10
+
+#################################
+## unseal Vault for use        ##
+#################################
+- name: Unseal Vault for use
+  block:
+    - name: Get Unlock key
+      shell: /usr/local/bin/kubectl exec vault-0 -- vault operator init -key-shares=1 -key-threshold=1 -format=json| jq -r ".unseal_keys_b64[]"
+      register: vault_key
+
+    - name: Verify - if Vault Secret exists
+      shell: /usr/local/bin/kubectl get secrets -o json |jq -r ".items[].metadata.name"
+      register: check
+
+    - name: Store Vault key in k8s
+      shell: /usr/local/bin/kubectl create secret generic vaultkey --from-literal=key="{{ vault_key.stdout }}"
+      
+      when: '"vaultkey" not in check.stdout_lines'
+
+    - name: Get Vault key from k8s
+      shell: /usr/local/bin/kubectl get secret vaultkey -o jsonpath='{.data.key}'|base64 -d
+      register: vault_unlockkey
+
+    - name: Unseal and start Vault
+      shell: /usr/local/bin/kubectl exec vault-0 -- vault operator unseal {{ vault_unlockkey.stdout }}
+  when: kubectl_get_pods.stdout == "Running"
+
+#################################
+## Vault ingress and cert      ##
+#################################
+- name: Apply Vault ingress
+  shell: /usr/local/bin/kubectl apply -f /aco_pkg/Hashicorp/Vault/vault-ingress.yaml
+  register: success
+  retries: 100
+  delay: 10
+  until: success.rc == 0
+
+- name: Apply Vault Cert
+  shell: /usr/local/bin/kubectl apply -f /aco_pkg/Hashicorp/Vault/vault-cert.yaml
+  register: success
+  retries: 100
+  delay: 10
+  until: success.rc == 0

@@ -1,0 +1,21 @@
+---
+- name: Nexus - Verify if Sonaytype Nexus is deployed
+  shell:
+    cmd: helm list -A -o json | jq '.[]|select(.name=="nexus-repo")'| jq -r .status
+  register: helm_check
+
+# uninstall and cleanup when running
+- name: Nexus - Uninstall nexus
+  include_tasks: uninstall.yaml
+  when: helm_check.stdout == 'deployed'
+
+  # install Nexus
+- name: Nexus - Install Nexus
+  include_tasks: install.yaml
+
+- name: Nexus - Configure nexus
+  include_tasks: configure.yaml
+  when: remove_persistent_data == yes
+
+
+

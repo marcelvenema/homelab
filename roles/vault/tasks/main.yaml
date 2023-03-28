@@ -1,0 +1,14 @@
+---
+- name: Vault - Verify if Hashicorp Vault is deployed
+  shell:
+    cmd: helm list -A -o json | jq '.[]|select(.name=="vault")'| jq -r .status
+  register: helm_check
+
+  # uninstall and cleanup when running
+- name: Vault - Uninstall Hashicorp Vault
+  include_tasks: uninstall.yaml
+  when: helm_check.stdout == 'deployed'
+
+  # install Vault
+- name: Vault - Install Hashicorp Vault
+  include_tasks: install.yaml

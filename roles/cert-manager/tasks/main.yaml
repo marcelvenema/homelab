@@ -1,0 +1,25 @@
+  # Check if installed
+- name: cert-manager - Verify if chart via Helm is deployed
+  shell:
+    cmd: helm list -A -o json | jq '.[]|select(.name=="cert-manager")'| jq -r .status
+  register: helm_check
+
+  # Uninstall
+- name: cert-manager - Uninstall chart
+  include_tasks: uninstall.yaml
+  when: helm_check.stdout == "deployed"
+
+  # Add Helm repository
+- name: cert-manager - Add Helm repository
+  shell: 
+    cmd: |
+      helm repo add jetstack {{ certmanager_repository_url }}
+      helm repo update
+  when: helm_check.stdout != "deployed"
+
+  # Deploy chart
+- name: cert-manager - Deploy Helm chart
+  shell: 
+    cmd: helm install cert-manager jetstack/cert-manager --create-namespace --version {{ certmanager_version }} --set installCRDs=true
+  when: helm_check.stdout != "deployed"
+  

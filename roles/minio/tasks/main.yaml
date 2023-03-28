@@ -1,0 +1,28 @@
+---
+- name: minio - Verify if chart via Helm is deployed
+  shell:
+    cmd: helm list -A -o json | jq '.[]|select(.name=="minio-operator")'| jq -r .status
+  register: helm_check
+
+  # Uninstall
+- name: minio - Uninstall chart
+  include_tasks: uninstall.yaml
+  when: helm_check.stdout == "deployed"
+
+  # Add Helm repository
+- name: minio - Add Helm repository
+  shell: 
+    cmd: |
+      helm repo add minio {{ minio_repository_url }}
+      helm repo update
+  when: helm_check.stdout != "deployed"
+
+  # Deploy minio chart
+- name: minio - Deploy minio helm chart
+  shell: 
+    cmd: |
+      helm install --namespace {{ minio_namespace }} --create-namespace minio minio/minio
+  when: helm_check.stdout != "deployed"
+
+     # helm install minio --namespace {{ minio_namespace }} minio/minio --set accessKey="{{ minio_accesskey }}" --set secretKey="{{ minio_secretkey }}" --set persistence.enabled={{ minio_persistent }} --set persistence.size={{ minio_persistent_size }} --set service.type=LoadBalancer --set securityContext.enabled=false
+
